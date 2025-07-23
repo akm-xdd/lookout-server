@@ -487,14 +487,16 @@ class EndpointScheduler:
             )
             
         except Exception as e:
-            print(f"❌ Failed to save check result: {e}")
-            import traceback
-            print(f"📋 Full error: {traceback.format_exc()}")
-            
+            erro_str = str(e)
+            if 'check_results_endpoint_id_fkey' in erro_str:
+                if endpoint_id in self.endpoint_cache:
+                    del self.endpoint_cache[endpoint_id]
+                    print(f"🗑️ Removed deleted endpoint {endpoint_id} from cache")
+                return
             self.logger.error(
                 "Failed to save check result",
                 endpoint_id=endpoint_id,
-                error=str(e)
+                error=erro_str
             )
 
     async def _save_check_result_fallback(self, endpoint_id: str, result: Dict[str, Any]) -> None:

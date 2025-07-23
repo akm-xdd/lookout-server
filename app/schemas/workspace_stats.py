@@ -99,7 +99,7 @@ class WorkspaceStatsIncident(BaseModel):
     cause: str = Field(..., description="Primary error message")
     duration_minutes: int = Field(..., description="Duration of incident in minutes")
     failure_count: int = Field(..., description="Number of consecutive failures")
-    status_code: int = Field(default=0, description="HTTP status code (0 for network errors)")
+    status_code: int = Field(..., description="HTTP status code (0 for network errors)")
     start_time: datetime = Field(..., description="When the incident started")
     end_time: Optional[datetime] = Field(None, description="When the incident ended (null if ongoing)")
     detected_at: datetime = Field(..., description="When the incident was first detected")

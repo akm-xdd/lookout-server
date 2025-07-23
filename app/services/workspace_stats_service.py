@@ -271,8 +271,6 @@ class WorkspaceStatsService:
         if response_times:
             try:
                 avg_response_time = sum(response_times) / len(response_times)
-                if avg_response_time < 0:
-                    avg_response_time = None
             except (ZeroDivisionError, TypeError):
                 avg_response_time = None
 
@@ -286,12 +284,6 @@ class WorkspaceStatsService:
                     avg_uptime = 100.0
             except (ZeroDivisionError, TypeError):
                 avg_uptime = None
-
-        
-        avg_uptime = (
-            sum(uptime_percentages) / len(uptime_percentages) 
-            if uptime_percentages else None
-        )
         
         return WorkspaceStatsOverview(
             total_endpoints=total_endpoints,
@@ -426,8 +418,11 @@ class WorkspaceStatsService:
                 health_score=None,
                 active_incidents=0,
                 last_incident_at=None,
-                uptime_trend_7d=[],  # Could be populated later if needed
-                response_time_trend_24h=[]  # Could be populated later if needed
+                uptime_trend_7d=[], 
+                weather='unknown',
+                weather_emoji='❓',
+                weather_description='No active endpoints to monitor',
+                response_time_trend_24h=[]
             )
         
         # Count incidents (from the incidents we just calculated)

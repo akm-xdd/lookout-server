@@ -3,3 +3,5 @@
 /script.py
 /startup.sh
 /venv
+*.pyc
+__pycache__/

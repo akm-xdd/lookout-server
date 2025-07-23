@@ -15,11 +15,9 @@ async def get_user_stats(
 ):
     """Get user statistics and limits"""
     
-    # Get workspace count
     workspaces = await workspace_service.get_user_workspaces(user_id)
     workspace_count = len(workspaces)
     
-    # Calculate total endpoints across all workspaces
     total_endpoints = 0
     for workspace in workspaces:
         stats = await workspace_service.get_workspace_stats(workspace.id, user_id)

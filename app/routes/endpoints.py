@@ -1,11 +1,13 @@
 # app/routes/endpoints.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPAuthorizationCredentials
 from typing import List
 from uuid import UUID
 
 from app.schemas.endpoint import EndpointCreate, EndpointUpdate, EndpointResponse
 from app.services.endpoint_service import EndpointService
-from app.core.auth import get_user_id
+from app.core.auth import get_user_id, security
+from app.core.rate_limiting import apply_rate_limit
 from app.services.scheduler_manager import (
     notify_endpoint_created,
     notify_endpoint_updated,
@@ -28,21 +30,21 @@ async def get_workspace_endpoints(
 
 @router.post("/", response_model=EndpointResponse, status_code=status.HTTP_201_CREATED)
 async def create_endpoint(
+    request: Request,
     workspace_id: UUID,
     endpoint_data: EndpointCreate,
     user_id: str = Depends(get_user_id),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     endpoint_service: EndpointService = Depends()
 ):
     """Create a new endpoint in a workspace"""
+    await apply_rate_limit(request, "create_endpoint", credentials)
+    
     endpoint = await endpoint_service.create_endpoint(endpoint_data, workspace_id, user_id)
-    
-    # Notify scheduler of new endpoint
     notify_endpoint_created(endpoint.dict())
-    
     return endpoint
 
 
-# Individual endpoint routes (by endpoint ID)
 @router.get("/{endpoint_id}", response_model=EndpointResponse)
 async def get_endpoint(
     workspace_id: UUID,
@@ -58,7 +60,6 @@ async def get_endpoint(
             detail="Endpoint not found"
         )
     
-    # Verify endpoint belongs to the specified workspace
     if endpoint.workspace_id != workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -84,7 +85,6 @@ async def update_endpoint(
             detail="Endpoint not found"
         )
     
-    # Verify endpoint belongs to the specified workspace
     if endpoint.workspace_id != workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -103,7 +103,6 @@ async def delete_endpoint(
     endpoint_service: EndpointService = Depends()
 ):
     """Delete an endpoint"""
-    # Get endpoint first to verify it belongs to the workspace
     endpoint = await endpoint_service.get_endpoint(endpoint_id, user_id)
     if not endpoint:
         raise HTTPException(
@@ -128,10 +127,13 @@ async def delete_endpoint(
 
 @router.post("/{endpoint_id}/test")
 async def test_endpoint(
+    request: Request,
     workspace_id: UUID,
     endpoint_id: UUID,
     user_id: str = Depends(get_user_id),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     endpoint_service: EndpointService = Depends()
 ):
     """Test an endpoint manually"""
+    await apply_rate_limit(request, "test_endpoint", credentials)
     return await endpoint_service.test_endpoint(endpoint_id, user_id)

@@ -72,7 +72,7 @@ class DashboardStatsService:
                 return []
             
             # Get endpoint IDs
-            endpoints_response = self.supabase.table("endpoints").select("id").in_("workspace_id", workspace_ids).execute()
+            endpoints_response = self.supabase.table("endpoints").select("id").in_("workspace_id", workspace_ids).eq("is_active", True).execute()
             return [ep["id"] for ep in endpoints_response.data]
             
         except Exception as e:
@@ -371,7 +371,7 @@ class DashboardStatsService:
             # Get workspaces with endpoint info
             workspaces_response = self.supabase.table("workspaces").select("""
                 id, name,
-                endpoints(id, name)
+                endpoints(id, name, is_active)
             """).eq("user_id", user_id).execute()
             
             endpoint_info = {}

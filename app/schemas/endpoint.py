@@ -129,7 +129,7 @@ class EndpointBase(BaseModel):
     )
     frequency_minutes: int = Field(
         default=5,
-        ge=1,
+        ge=5,
         le=60,
         description="Check frequency in minutes"
     )

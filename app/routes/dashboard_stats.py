@@ -1,7 +1,8 @@
 # app/routes/dashboard_stats.py
-
-from fastapi import APIRouter, Depends
-from app.core.auth import get_user_id
+from fastapi import APIRouter, Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials
+from app.core.auth import get_user_id, security
+from app.core.rate_limiting import apply_rate_limit
 from app.services.dashboard_stats_service import DashboardStatsService
 from app.schemas.dashboard_stats import DashboardStatsResponse
 
@@ -10,7 +11,9 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard-stats"])
 
 @router.get("/stats", response_model=DashboardStatsResponse)
 async def get_dashboard_stats(
+    request: Request,
     user_id: str = Depends(get_user_id),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     stats_service: DashboardStatsService = Depends()
 ):
     """
@@ -37,10 +40,10 @@ async def get_dashboard_stats(
     **Performance**: Single database query optimized for minimal egress usage.
     **Caching**: Response can be cached for 5-10 minutes on frontend.
     """
+    await apply_rate_limit(request, "dashboard", credentials)
     return await stats_service.get_dashboard_stats(user_id)
 
 
-# Optional: Simplified endpoint for just checking if charts should be shown
 @router.get("/stats/availability")
 async def get_stats_availability(
     user_id: str = Depends(get_user_id),
@@ -51,7 +54,6 @@ async def get_stats_availability(
     Returns basic info about data availability without full computation.
     """
     try:
-        # Just check if user has endpoints and recent check data
         endpoint_ids = await stats_service._get_user_endpoint_ids(user_id)
         
         if not endpoint_ids:
@@ -62,7 +64,6 @@ async def get_stats_availability(
                 "endpointCount": 0
             }
         
-        # Quick check for recent data (last 24 hours)
         from datetime import datetime, timedelta
         twenty_four_hours_ago = (datetime.now() - timedelta(hours=24)).isoformat()
         
@@ -74,7 +75,6 @@ async def get_stats_availability(
             "checked_at", twenty_four_hours_ago
         ).limit(1).execute()
         
-        # Check for historical data (7+ days)
         seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
         
         historical_checks = stats_service.supabase.table("check_results").select(

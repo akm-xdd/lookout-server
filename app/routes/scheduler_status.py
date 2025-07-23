@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+# app/routes/scheduler_status.py
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPAuthorizationCredentials
 from typing import Dict, Any
 
-from app.core.auth import get_user_id
+from app.core.auth import get_user_id, security
+from app.core.rate_limiting import apply_rate_limit
 from app.services.scheduler_manager import get_scheduler, scheduler_manager
 from app.core.config import settings
 
@@ -11,7 +14,7 @@ router = APIRouter(prefix="/scheduler", tags=["scheduler"])
 
 @router.get("/status")
 async def get_scheduler_status(
-    user_id: str = Depends(get_user_id)  # Require authentication
+    user_id: str = Depends(get_user_id)
 ) -> Dict[str, Any]:
     """
     Get current scheduler status and statistics.
@@ -47,12 +50,16 @@ async def get_scheduler_status(
 
 @router.post("/health-check")
 async def force_health_check(
-    user_id: str = Depends(get_user_id)  # Require authentication
+    request: Request,
+    user_id: str = Depends(get_user_id),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> Dict[str, Any]:
     """
     Force an immediate health check.
     Useful for testing or debugging.
     """
+    await apply_rate_limit(request, "scheduler_health_check", credentials)
+    
     if not settings.scheduler_enabled:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -84,7 +91,7 @@ async def force_health_check(
 
 @router.get("/metrics")
 async def get_scheduler_metrics(
-    user_id: str = Depends(get_user_id)  # Require authentication
+    user_id: str = Depends(get_user_id)
 ) -> Dict[str, Any]:
     """
     Get basic scheduler metrics for monitoring.
