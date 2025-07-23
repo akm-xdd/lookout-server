@@ -272,17 +272,13 @@ class DashboardStatsService:
             return []
     
     async def _get_endpoint_performance(self, user_id: str, endpoint_ids: List[str]) -> PerformanceStats:
-        """
-        Get best and worst performing endpoints in the past 24 hours.
-        """
+        """Get best and worst performing endpoints in the past 24 hours."""
         try:
             if not endpoint_ids:
                 return PerformanceStats(bestPerforming=[], worstPerforming=[])
             
-            # Get endpoint info
             endpoint_info = await self._get_endpoint_info(user_id)
             
-            # Get last 24 hours of check results
             twenty_four_hours_ago = (datetime.now() - timedelta(hours=24)).isoformat()
             
             results_response = self.supabase.table("check_results").select(
@@ -292,8 +288,10 @@ class DashboardStatsService:
             ).gte(
                 "checked_at", twenty_four_hours_ago
             ).execute()
+
+            if not results_response.data:
+                return PerformanceStats(bestPerforming=[], worstPerforming=[])
             
-            # Calculate performance metrics per endpoint
             endpoint_metrics = defaultdict(lambda: {
                 "total_checks": 0,
                 "successful_checks": 0,
@@ -307,10 +305,15 @@ class DashboardStatsService:
                 metrics["total_checks"] += 1
                 if result["success"]:
                     metrics["successful_checks"] += 1
-                    if result["response_time_ms"]:
-                        metrics["response_times"].append(result["response_time_ms"])
+                    response_time = result.get("response_time_ms")
+                    if response_time is not None:
+                        try:
+                            response_time_val = float(response_time)
+                            if response_time_val > 0:
+                                metrics["response_times"].append(response_time_val)
+                        except (ValueError, TypeError):
+                            pass
             
-            # Calculate final performance scores
             performance_list = []
             
             for endpoint_id, metrics in endpoint_metrics.items():
@@ -318,11 +321,22 @@ class DashboardStatsService:
                 if not endpoint_data or metrics["total_checks"] == 0:
                     continue
                 
-                uptime = (metrics["successful_checks"] / metrics["total_checks"]) * 100
-                avg_response_time = statistics.mean(metrics["response_times"]) if metrics["response_times"] else 0
+                try:
+                    uptime = (metrics["successful_checks"] / metrics["total_checks"]) * 100
+                    uptime = max(0.0, min(100.0, uptime))
+                except ZeroDivisionError:
+                    uptime = 0.0
                 
-                # Performance score: weight uptime heavily, penalize slow response times
-                performance_score = uptime - (avg_response_time / 100)  # Subtract 1 point per 100ms
+                avg_response_time = 0.0
+                if metrics["response_times"]:
+                    try:
+                        avg_response_time = statistics.mean(metrics["response_times"])
+                        if avg_response_time < 0:
+                            avg_response_time = 0.0
+                    except (statistics.StatisticsError, TypeError):
+                        avg_response_time = 0.0
+                
+                performance_score = uptime - (avg_response_time / 100)
                 
                 performance_list.append(EndpointPerformance(
                     endpointId=endpoint_id,
@@ -334,15 +348,13 @@ class DashboardStatsService:
                     performanceScore=round(performance_score, 2)
                 ))
             
-            # Sort by performance score
             performance_list.sort(key=lambda x: x.performanceScore, reverse=True)
             
-            # Get best and worst (minimum 3 checks to be considered)
             qualified_endpoints = [ep for ep in performance_list if ep.totalChecks >= 3]
             
-            best_performing = qualified_endpoints[:5]  # Top 5
+            best_performing = qualified_endpoints[:5]
             worst_performing = qualified_endpoints[-5:] if len(qualified_endpoints) > 5 else []
-            worst_performing.reverse()  # Worst first
+            worst_performing.reverse()
             
             return PerformanceStats(
                 bestPerforming=best_performing,
@@ -350,7 +362,7 @@ class DashboardStatsService:
             )
             
         except Exception as e:
-            print(f"❌ Endpoint performance error: {e}")
+            print(f"❌ Endpoint performance calculation error: {e}")
             return PerformanceStats(bestPerforming=[], worstPerforming=[])
     
     async def _get_endpoint_info(self, user_id: str) -> Dict[str, Dict[str, str]]:

@@ -232,14 +232,20 @@ class WorkspaceStatsService:
                 unknown_count += 1
             
             # Aggregate response times (24h average)
-            if stat.get('avg_response_time_24h'):
-                response_times.append(stat['avg_response_time_24h'])
+            avg_response_time = stat.get('avg_response_time_24h')
+            if avg_response_time is not None:
+                try:
+                    response_time_val = float(avg_response_time)
+                    if response_time_val > 0:
+                        response_times.append(response_time_val)
+                except (ValueError, TypeError):
+                    pass
             
             # Aggregate uptime data
             checks_24h = stat.get('checks_last_24h', 0)
             successful_24h = stat.get('successful_checks_24h', 0)
             
-            if checks_24h > 0:
+            if checks_24h > 0 and successful_24h >= 0:
                 uptime_percent = (successful_24h / checks_24h) * 100
                 uptime_percentages.append(uptime_percent)
                 total_checks += checks_24h
@@ -247,14 +253,40 @@ class WorkspaceStatsService:
             
             # Track latest check time
             last_check = stat.get('last_check_at')
-            if last_check and (not latest_check or last_check > latest_check):
-                latest_check = last_check
+            if last_check:
+                try:
+                    if isinstance(last_check, str):
+                        from datetime import datetime
+                        parsed_check = datetime.fromisoformat(last_check.replace('Z', '+00:00'))
+                        if not latest_check or parsed_check > latest_check:
+                            latest_check = parsed_check
+                    elif hasattr(last_check, 'year'):
+                        if not latest_check or last_check > latest_check:
+                            latest_check = last_check
+                except (ValueError, TypeError, AttributeError):
+                    pass
         
         # Calculate averages
-        avg_response_time = (
-            sum(response_times) / len(response_times) 
-            if response_times else None
-        )
+        avg_response_time = None
+        if response_times:
+            try:
+                avg_response_time = sum(response_times) / len(response_times)
+                if avg_response_time < 0:
+                    avg_response_time = None
+            except (ZeroDivisionError, TypeError):
+                avg_response_time = None
+
+        avg_uptime = None
+        if uptime_percentages:
+            try:
+                avg_uptime = sum(uptime_percentages) / len(uptime_percentages)
+                if avg_uptime < 0:
+                    avg_uptime = 0.0
+                elif avg_uptime > 100:
+                    avg_uptime = 100.0
+            except (ZeroDivisionError, TypeError):
+                avg_uptime = None
+
         
         avg_uptime = (
             sum(uptime_percentages) / len(uptime_percentages) 
