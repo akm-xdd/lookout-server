@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     project_name: str = "LookOut API"
     project_version: str = "1.0.0"
     
-    # NEW: Scheduler Configuration
+    # Scheduler Configuration
     scheduler_enabled: bool = os.getenv("SCHEDULER_ENABLED", "True").lower() == "true"
     scheduler_interval: int = int(os.getenv("SCHEDULER_INTERVAL", "30"))  # seconds
     health_check_interval: int = int(os.getenv("HEALTH_CHECK_INTERVAL", "120"))  # seconds
@@ -31,18 +31,30 @@ class Settings(BaseSettings):
     http_timeout: int = int(os.getenv("HTTP_TIMEOUT", "20"))  # seconds
     retry_delay: int = int(os.getenv("RETRY_DELAY", "10"))  # seconds
     
-    # NEW: Circuit Breaker Configuration
+    # Circuit Breaker Configuration
     failure_threshold: int = int(os.getenv("FAILURE_THRESHOLD", "3"))
     success_threshold: int = int(os.getenv("SUCCESS_THRESHOLD", "3"))
     queue_overwhelmed_size: int = int(os.getenv("QUEUE_OVERWHELMED_SIZE", "1000"))
     
-    # NEW: Monitoring Configuration
+    # Monitoring Configuration
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     cache_warning_size: int = int(os.getenv("CACHE_WARNING_SIZE", "5000"))
     queue_warning_size: int = int(os.getenv("QUEUE_WARNING_SIZE", "500"))
     
-    # NEW: Optional External Monitoring
+    # Optional External Monitoring
     sentry_dsn: Optional[str] = os.getenv("SENTRY_DSN")
+    
+    # Redis Configuration
+    redis_enabled: bool = os.getenv("REDIS_ENABLED", "True").lower() == "true"
+    redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+    redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
+    redis_ssl: bool = os.getenv("REDIS_SSL", "False").lower() == "true"
+    redis_max_connections: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "20"))
+    
+    # Cache TTL Configuration (in seconds)
+    cache_ttl_dashboard_stats: int = int(os.getenv("CACHE_TTL_DASHBOARD_STATS", "60"))  # 1 minute
+    cache_ttl_endpoint_stats: int = int(os.getenv("CACHE_TTL_ENDPOINT_STATS", "300"))  # 5 minutes
+    cache_ttl_user_stats: int = int(os.getenv("CACHE_TTL_USER_STATS", "600"))  # 10 minutes
     
     @validator("supabase_url")
     def validate_supabase_url(cls, v):
@@ -72,6 +84,24 @@ class Settings(BaseSettings):
     def validate_http_timeout(cls, v):
         if v < 5 or v > 120:
             raise ValueError("HTTP_TIMEOUT must be between 5 and 120 seconds")
+        return v
+    
+    @validator("redis_url")
+    def validate_redis_url(cls, v):
+        if not v:
+            raise ValueError("REDIS_URL is required when Redis is enabled")
+        return v
+    
+    @validator("redis_max_connections")
+    def validate_redis_max_connections(cls, v):
+        if v < 1 or v > 100:
+            raise ValueError("REDIS_MAX_CONNECTIONS must be between 1 and 100")
+        return v
+    
+    @validator("cache_ttl_dashboard_stats")
+    def validate_cache_ttl_dashboard_stats(cls, v):
+        if v < 30 or v > 3600:
+            raise ValueError("CACHE_TTL_DASHBOARD_STATS must be between 30 and 3600 seconds")
         return v
 
     class Config:

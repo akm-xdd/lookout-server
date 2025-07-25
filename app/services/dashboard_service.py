@@ -10,12 +10,13 @@ from app.schemas.dashboard import (
 )
 from app.schemas.endpoint import EndpointResponse
 from app.core.constants import MAX_WORKSPACES_PER_USER, MAX_TOTAL_ENDPOINTS_PER_USER
-
+from app.core.cache import redis_cache
 
 class DashboardService:
     def __init__(self, supabase=Depends(get_supabase)):
         self.supabase = supabase
 
+    @redis_cache(ttl=60, key_prefix="dashboard")
     async def get_dashboard_data(self, user_id: str, user_email: str) -> DashboardResponse:
         try:
             workspaces_response = self.supabase.table("workspaces").select("""

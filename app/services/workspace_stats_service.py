@@ -13,6 +13,7 @@ from app.schemas.workspace_stats import (
     WorkspaceStatsOverview,
     WorkspaceStatsHealth
 )
+from app.core.cache import redis_cache
 
 
 class WorkspaceStatsService:
@@ -24,6 +25,7 @@ class WorkspaceStatsService:
     def __init__(self):
         self.supabase = get_supabase_admin()
 
+    @redis_cache(ttl=300, key_prefix="workspace_stats")
     async def get_workspace_stats(self, workspace_id: UUID, user_id: str) -> WorkspaceStatsResponse:
         """
         Get comprehensive workspace statistics in a single call.

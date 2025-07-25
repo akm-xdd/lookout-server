@@ -560,19 +560,10 @@ class EndpointScheduler:
     async def _load_endpoints_from_database(self) -> None:
         """Load all active endpoints from database (one-time startup operation)"""
         try:
-            # DEBUG: Test admin connection
-            print(f"🔍 Supabase URL: {self.supabase.supabase_url}")
-            print(f"🔑 Using service key: {self.supabase.supabase_key[:20]}...")
             
-            # Test total count first
-            count_response = self.supabase.table('endpoints').select('*', count='exact').execute()
-            print(f"📊 Total endpoints visible to admin: {count_response.count}")
-            print(f"📋 Sample data: {count_response.data}")
             
             # Test active query
             response = self.supabase.table('endpoints').select('*').eq('is_active', True).execute()
-            print(f"✅ Active endpoints found: {len(response.data)}")
-            print(f"📋 Active data: {response.data}")
             
             current_time = time.time()
             
