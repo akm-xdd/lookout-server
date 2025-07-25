@@ -213,6 +213,15 @@ class EndpointService:
             }
             
             response = self.supabase.table("endpoints").insert(data).execute()
+
+            if response.data:
+                from app.db.redis import cache
+
+                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
+                await cache.delete(dashboard_key)
+                workspace_key = f"workspace_stats:get_workspace_stats:{workspace_id}:{user_id}"
+                await cache.delete(workspace_key)
+                print(f"✅ Created endpoint and cleared cache: {dashboard_key}, {workspace_key}")
             
             if not response.data:
                 raise HTTPException(
@@ -316,7 +325,19 @@ class EndpointService:
             
             # Delete the endpoint
             response = self.supabase.table("endpoints").delete().eq("id", str(endpoint_id)).execute()
-            return len(response.data) > 0
+
+            if response.data:
+                from app.db.redis import cache
+
+                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
+                await cache.delete(dashboard_key)
+                workspace_key = f"workspace_stats:get_workspace_stats:{existing_endpoint.workspace_id}:{user_id}"
+                await cache.delete(workspace_key)
+                print(f"🗑️ Deleted endpoint and cleared cache: {dashboard_key}, {workspace_key}")
+
+                return True
+
+            return False
             
         except HTTPException:
             raise

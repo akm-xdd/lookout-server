@@ -86,7 +86,17 @@ class WorkspaceService:
             }
 
             response = self.supabase.table("workspaces").insert(data).execute()
-            
+
+            if response.data:
+                from app.db.redis import cache
+                # Clear any cached stats for this user
+                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
+                await cache.delete(dashboard_key)
+                print(f"✅ Created workspace and cleared cache: {dashboard_key}")
+
+                workspace_key = f"workspace_stats:get_workspace_stats:{response.data[0]['id']}:{user_id}"
+                await cache.delete(workspace_key)
+                print(f"✅ Cleared workspace cache: {workspace_key}")
 
             if not response.data:
                 raise HTTPException(
@@ -171,6 +181,18 @@ class WorkspaceService:
             # Delete the workspace (endpoints will be deleted via CASCADE)
             response = self.supabase.table("workspaces").delete().eq(
                 "id", str(workspace_id)).eq("user_id", user_id).execute()
+            
+            if response.data:
+                from app.db.redis import cache
+                # Clear any cached stats for this workspace
+                workspace_key = f"workspace_stats:get_workspace_stats:{workspace_id}:{user_id}"
+                await cache.delete(workspace_key)
+                print(f"✅ Deleted workspace and cleared cache: {workspace_key}")
+
+                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
+                await cache.delete(dashboard_key)
+                print(f"✅ Cleared dashboard cache: {dashboard_key}")
+
             return len(response.data) > 0
 
         except Exception as e:
