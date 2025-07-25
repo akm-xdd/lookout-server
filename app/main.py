@@ -1,10 +1,10 @@
 # app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 
-from app.core.config import settings
+from app.core.config import settings, get_cors_origins
 from app.routes.workspaces import router as workspace_router
 from app.routes.endpoints import router as endpoint_router
 from app.routes.user_stats import router as user_stats_router
@@ -26,11 +26,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.debug else None,
         lifespan=lifespan
     )
+    # In app/main.py, add this before the CORS middleware:
+
+    print(get_cors_origins())
 
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=get_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

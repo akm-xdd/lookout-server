@@ -3,6 +3,9 @@ import os
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import validator
+from dotenv import load_dotenv
+
+load_dotenv() 
 
 
 class Settings(BaseSettings):
@@ -15,9 +18,6 @@ class Settings(BaseSettings):
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
     api_port: int = int(os.getenv("API_PORT", "8000"))
     debug: bool = os.getenv("DEBUG", "False").lower() == "true"
-    
-    # CORS Configuration
-    cors_origins: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     
     # Project Configuration
     project_name: str = "LookOut API"
@@ -76,6 +76,21 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore" 
 
 
 settings = Settings()
+
+
+def get_cors_origins() -> list[str]:
+    """Parse CORS origins from environment variable"""
+    cors_env = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    
+    # Remove any array brackets and quotes
+    cors_env = cors_env.strip().strip('[]').replace('"', '').replace("'", "")
+    
+    # Split by comma and clean
+    origins = [origin.strip().rstrip('/') for origin in cors_env.split(',')]
+    
+    # Filter empty and return
+    return [origin for origin in origins if origin]
