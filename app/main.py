@@ -1,7 +1,7 @@
 # app/main.py
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+# from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 
@@ -28,9 +28,6 @@ def create_app() -> FastAPI:
 
     print(get_cors_origins())
 
-    # Add HTTPS redirect middleware FIRST (only in production)
-    if not settings.debug:
-        app.add_middleware(HTTPSRedirectMiddleware)
 
     # CORS middleware (after HTTPS redirect)
     app.add_middleware(
