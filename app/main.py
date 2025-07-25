@@ -42,17 +42,16 @@ def create_app() -> FastAPI:
     )
 
     # Custom middleware to fix redirect headers
-    @app.middleware("http")
-    async def fix_redirect_headers(request: Request, call_next):
-        response = await call_next(request)
+    # @app.middleware("http")
+    # async def fix_redirect_headers(request: Request, call_next):
+    #     response = await call_next(request)
         
-        # Fix any Location headers that might use HTTP and remove trailing slashes
-        if hasattr(response, 'headers') and 'location' in response.headers:
-            location = response.headers['location']
-            
-            response.headers['location'] = location.replace('http://', 'https://').rstrip('/')
+    #     # Fix any Location headers that might use HTTP and remove trailing slashes
+    #     if hasattr(response, 'headers') and 'location' in response.headers:
+    #         location = response.headers['location']
+    #         response.headers['location'] = location.replace('http://', 'https://').rstrip('/')
         
-        return response
+    #     return response
 
     # Include routers
     app.include_router(workspace_router, prefix="/api")
