@@ -189,9 +189,9 @@ class WorkspaceService:
                 await cache.delete(workspace_key)
                 print(f"✅ Deleted workspace and cleared cache: {workspace_key}")
 
-                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
-                await cache.delete(dashboard_key)
-                print(f"✅ Cleared dashboard cache: {dashboard_key}")
+                dashboard_pattern = f"dashboard:get_dashboard_data:{user_id}:*"
+                await cache.delete(dashboard_pattern)
+                print(f"✅ Cleared dashboard cache: {dashboard_pattern}")
 
             return len(response.data) > 0
 

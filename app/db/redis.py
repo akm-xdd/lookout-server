@@ -189,8 +189,22 @@ class RedisCache:
         except Exception as e:
             logger.error(f"Redis health check failed: {e}")
             return False
-
-
+    
+    async def delete_pattern(self, pattern: str) -> int:
+        """Delete all keys matching a pattern"""
+        if not settings.redis_enabled:
+            return 0
+        
+        try:
+            client = await self._get_client()
+            keys = await client.keys(pattern)
+            if keys:
+                deleted = await client.delete(*keys)
+                return deleted
+            return 0
+        except Exception as e:
+            logger.warning(f"Cache pattern delete failed for pattern {pattern}: {e}")
+            return 0
 # Global cache instance
 cache = RedisCache()
 
