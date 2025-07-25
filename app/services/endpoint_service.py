@@ -8,6 +8,7 @@ from app.schemas.endpoint import EndpointCreate, EndpointUpdate, EndpointRespons
 from app.core.constants import MAX_ENDPOINTS_PER_WORKSPACE, MAX_TOTAL_ENDPOINTS_PER_USER
 import json
 import hashlib
+from app.core.url_validator import validate_monitoring_url
 
 
 class EndpointService:
@@ -182,7 +183,16 @@ class EndpointService:
         
         # Validate endpoint limits
         await self._validate_endpoint_limits(workspace_id, user_id)
-        
+
+        # Validate URL security
+        is_valid, error_message = validate_monitoring_url(endpoint_data.url)
+
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid endpoint URL: {error_message}"
+            )
+
         # Validate unique name within workspace
         await self._validate_endpoint_name_unique(endpoint_data.name, workspace_id)
         
@@ -194,6 +204,7 @@ class EndpointService:
             body=endpoint_data.body,
             workspace_id=workspace_id
         )
+        
         
         try:
             data = {
