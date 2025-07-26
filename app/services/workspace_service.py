@@ -90,9 +90,9 @@ class WorkspaceService:
             if response.data:
                 from app.db.redis import cache
                 # Clear any cached stats for this user
-                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
-                await cache.delete(dashboard_key)
-                print(f"✅ Created workspace and cleared cache: {dashboard_key}")
+                dashboard_pattern = f"dashboard:get_dashboard_data:{user_id}:*"
+                await cache.delete_pattern(dashboard_pattern)
+                print(f"✅ Created workspace and cleared cache: {dashboard_pattern}")
 
                 workspace_key = f"workspace_stats:get_workspace_stats:{response.data[0]['id']}:{user_id}"
                 await cache.delete(workspace_key)
@@ -190,7 +190,7 @@ class WorkspaceService:
                 print(f"✅ Deleted workspace and cleared cache: {workspace_key}")
 
                 dashboard_pattern = f"dashboard:get_dashboard_data:{user_id}:*"
-                await cache.delete(dashboard_pattern)
+                await cache.delete_pattern(dashboard_pattern)
                 print(f"✅ Cleared dashboard cache: {dashboard_pattern}")
 
             return len(response.data) > 0

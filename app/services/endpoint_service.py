@@ -217,12 +217,13 @@ class EndpointService:
             if response.data:
                 from app.db.redis import cache
 
-                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
-                await cache.delete(dashboard_key)
+                dashboard_pattern = f"dashboard:get_dashboard_data:{user_id}:*"
+                await cache.delete_pattern(dashboard_pattern)
+
                 workspace_key = f"workspace_stats:get_workspace_stats:{workspace_id}:{user_id}"
                 await cache.delete(workspace_key)
-                print(f"✅ Created endpoint and cleared cache: {dashboard_key}, {workspace_key}")
-            
+                print(f"✅ Created endpoint and cleared cache: {dashboard_pattern}, {workspace_key}")
+
             if not response.data:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -329,11 +330,11 @@ class EndpointService:
             if response.data:
                 from app.db.redis import cache
 
-                dashboard_key = f"dashboard_stats:get_dashboard_stats:{user_id}"
-                await cache.delete(dashboard_key)
+                dashboard_pattern = f"dashboard:get_dashboard_data:{user_id}:*"
+                await cache.delete_pattern(dashboard_pattern)
                 workspace_key = f"workspace_stats:get_workspace_stats:{existing_endpoint.workspace_id}:{user_id}"
                 await cache.delete(workspace_key)
-                print(f"🗑️ Deleted endpoint and cleared cache: {dashboard_key}, {workspace_key}")
+                print(f"🗑️ Deleted endpoint and cleared cache: {dashboard_pattern}, {workspace_key}")
 
                 return True
 
