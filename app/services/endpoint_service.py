@@ -301,6 +301,15 @@ class EndpointService:
                 )
             
             response = self.supabase.table("endpoints").update(update_data).eq("id", str(endpoint_id)).execute()
+
+            # If the update was successful, clear relevant caches
+            if response.data:
+                from app.db.redis import cache
+
+                dashboard_pattern = f"dashboard:get_dashboard_data:{user_id}:*"
+                await cache.delete_pattern(dashboard_pattern)
+                workspace_key = f"workspace_stats:get_workspace_stats:{existing_endpoint.workspace_id}:{user_id}"
+                await cache.delete(workspace_key)
             
             if not response.data:
                 return None
