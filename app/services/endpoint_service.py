@@ -362,7 +362,6 @@ class EndpointService:
             import aiohttp
             import time
             
-            start_time = time.time()
             
             # Prepare request data
             headers = endpoint.headers or {}
@@ -383,6 +382,8 @@ class EndpointService:
 
             # print(request_config)
 
+            start_time = time.time()
+
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.request(
                     method=endpoint.method,
@@ -390,8 +391,10 @@ class EndpointService:
                     headers=headers,
                     data=endpoint.body if endpoint.body else None
                 ) as response:
-                    response_time = int((time.time() - start_time) * 1000)  # milliseconds
+                    # Read response to ensure connection is established
+                    await response.read()
                     
+                    response_time = int((time.time() - start_time) * 1000)  # milliseconds
                     return {
                         "status_code": response.status,
                         "response_time_ms": response_time,

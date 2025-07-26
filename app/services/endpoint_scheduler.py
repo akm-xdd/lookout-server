@@ -372,7 +372,6 @@ class EndpointScheduler:
     
     async def _perform_http_check(self, endpoint_config: Dict[str, Any], worker_id: int, attempt: int = 1) -> Dict[str, Any]:
         """Perform the actual HTTP check"""
-        start_time = time.time()
         
         try:
             # Prepare request
@@ -389,7 +388,8 @@ class EndpointScheduler:
             
             # Create timeout
             timeout = aiohttp.ClientTimeout(total=timeout_seconds)
-            
+
+            start_time = time.time()
             # Perform request
             async with self.http_session.request(
                 method=method,
@@ -398,6 +398,10 @@ class EndpointScheduler:
                 data=body if body else None,
                 timeout=timeout
             ) as response:
+                
+                # Read response
+                await response.read()
+
                 response_time_ms = int((time.time() - start_time) * 1000)
                 
                 return {
@@ -414,7 +418,7 @@ class EndpointScheduler:
             return {
                 'success': False,
                 'error': 'Request timeout',
-                'response_time_ms': response_time_ms,
+                'response_time_ms': timeout_seconds * 1000,
                 'attempt': attempt,
                 'retryable': True
             }
@@ -434,7 +438,7 @@ class EndpointScheduler:
             return {
                 'success': False,
                 'error': error_str,
-                'response_time_ms': response_time_ms,
+                'response_time_ms': 0,
                 'attempt': attempt,
                 'retryable': retryable
             }
