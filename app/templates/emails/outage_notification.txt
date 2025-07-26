@@ -1,0 +1,19 @@
+🚨 OUTAGE ALERT
+
+Hi there,
+
+The following endpoints in your "{{ workspace_name }}" workspace have experienced outages:
+
+{% for endpoint in failing_endpoints %}
+• {{ endpoint.name }} - {{ endpoint.consecutive_failures }} consecutive failures
+  {% if endpoint.last_check_at %}Last checked: {{ endpoint.last_check_at }}{% endif %}
+
+{% endfor %}
+
+View workspace dashboard: {{ dashboard_link }}
+
+💡 Note: You'll receive another notification only when services recover and new outages occur.
+
+Best regards,
+LookOut Monitoring
+Keep your services alive and monitored

@@ -11,6 +11,7 @@ from app.routes.endpoints import router as endpoint_router
 from app.routes.user_stats import router as user_stats_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.scheduler_status import router as scheduler_router
+from app.routes.notification_settings import router as notification_settings_router
 from app.services.scheduler_manager import lifespan
 
 
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(user_stats_router, prefix="/api")
     app.include_router(dashboard_router, prefix="/api")
     app.include_router(scheduler_router, prefix="/api")
+    app.include_router(notification_settings_router, prefix="/api")
 
     # Health check endpoint
     @app.get("/health")
