@@ -6,7 +6,8 @@ from app.services.endpoint_scheduler import EndpointScheduler
 from app.db.supabase import get_supabase_admin
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
-
+from app.services.outage_notification_service import outage_notification_service
+import asyncio
 
 class SchedulerManager:
     """
@@ -84,6 +85,7 @@ async def lifespan(app: FastAPI):
     try:
         await scheduler_manager.initialize()
         logger.info("Application startup completed")
+        email_task = asyncio.create_task(outage_notification_service.start())
     except Exception as e:
         logger.error("Application startup failed", error=str(e))
         raise
@@ -95,6 +97,8 @@ async def lifespan(app: FastAPI):
     try:
         await scheduler_manager.shutdown()
         logger.info("Application shutdown completed")
+        await outage_notification_service.stop()
+
     except Exception as e:
         logger.error("Application shutdown failed", error=str(e))
 

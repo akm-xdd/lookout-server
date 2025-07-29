@@ -110,8 +110,12 @@ class NotificationSettingsService:
                 failure_threshold=5,
                 email_address_changed=False
             )
+
+            data_dict = create_data.dict()
+
+            data_dict['user_id'] = str(data_dict['user_id'])
             
-            response = self.supabase.table("user_notification_settings").insert(create_data.dict()).execute()
+            response = self.supabase.table("user_notification_settings").insert(data_dict).execute()
             
             if not response.data:
                 raise HTTPException(
