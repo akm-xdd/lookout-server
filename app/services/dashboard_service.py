@@ -238,8 +238,6 @@ class DashboardService:
                 "checked_at, success"
             ).in_(
                 "endpoint_id", endpoint_ids
-            ).eq(
-                "is_active", True
             ). gte(
                 "checked_at", seven_days_ago
             ).execute()
